@@ -1,0 +1,48 @@
+import numpy as np
+
+
+def dcg(true_relevance, pred_relevance, k=5, gains='linear', use_numpy=False):
+    np_true_relevance = np.array(true_relevance)
+    if not use_numpy:
+        args_pred = [i[0] for i in sorted(enumerate(pred_relevance), key=lambda p: p[1], reverse=True)]
+    else:
+        args_pred = np.argsort(pred_relevance)[::-1]
+    if np_true_relevance.shape[0] < k:
+        k = np_true_relevance.shape[0]
+    order_true_relevance = np.take(np_true_relevance, args_pred[:k])
+
+    if gains == "exponential":
+        gains = 2 ** order_true_relevance - 1
+    elif gains == "linear":
+        gains = order_true_relevance
+    else:
+        raise ValueError("Invalid gains option.")
+
+    discounts = np.log2(np.arange(k) + 2)
+    return np.sum(gains / discounts)
+
+
+def ndcg(true_relevance, pred_relevance, k=5, no_relevant=True, gains='linear', use_numpy=False):
+    dcg_atk = dcg(true_relevance, pred_relevance, k, gains, use_numpy)
+    idcg_atk = dcg(true_relevance, true_relevance, k, gains, use_numpy)
+    if idcg_atk == 0 and no_relevant: return 1.0
+    if idcg_atk == 0 and not no_relevant: return 0.0
+    return dcg_atk / idcg_atk
+
+
+def mNdcg(true_relevance, pred_relevance, k=5, no_relevant=True, gains='linear', use_numpy=False):
+    np_true_relevance = np.array(true_relevance)
+    num_queries = np_true_relevance.shape[0]
+    return [ndcg(true_relevance[i], pred_relevance[i], k, no_relevant, gains, use_numpy) for i in range(num_queries)]
+
+
+if __name__ == "__main__":
+    predicted_relevance = np.asarray([[1, 0, 0, 0, 0], [1, 0, 0, 0, 0]])
+    true_relevance = np.asarray([[0, 0, 0, 0, 1], [10, 0, 0, 0, 0]])
+
+    r = mNdcg(true_relevance, predicted_relevance, k=5, no_relevant=True, gains='linear', use_numpy=False)
+    print(r)
+    print(np.mean(r))
+    r = mNdcg(true_relevance, predicted_relevance, k=5, no_relevant=True, gains='linear', use_numpy=True)
+    print(r)
+    print(np.mean(r))

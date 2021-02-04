@@ -50,103 +50,58 @@ def georisk_listnet_loss(y_true, y_predicted, y_baselines):
         mat.append(P_y_true * torch.log(P_y_baselines)[:, :, i])
     mat = torch.stack(mat)
     mat = torch.sum(mat, dim=2)
-    mat = -1*mat.t()
+    mat = -1 * mat.t()
 
     ######################
+    mat = mat - torch.min(mat)
+    mat = mat / torch.max(mat)
+    # F.softmax(mat)
+    # F.sigmoid(mat)
 
-    alpha = 3
-    ##### IMPORTANT
-    # This function takes a matrix (mat) of number of rows as a number of queries, and the number of collumns as the number of systems.
-    # alpha is a float
-    ##############
-    numSystems = mat.shape[1]
+    alpha = torch.tensor([3], requires_grad=True, dtype=torch.float)
     numQueries = mat.shape[0]
-    Tj = torch.zeros(numQueries)
-    Si = torch.zeros(numSystems)
-    geoRisk = torch.zeros(numSystems)
-    zRisk = torch.zeros(numSystems)
-    mSi = torch.zeros(numSystems)
-
-    for i in range(numSystems):
-        Si[i] = torch.sum(mat[:, i])
-        mSi[i] = torch.mean(mat[:, i])
-
-    for j in range(numQueries):
-        Tj[j] = torch.sum(mat[j, :])
-
+    Si = torch.sum(mat[:, 0])
+    Tj = torch.sum(mat, dim=1)
     N = torch.sum(Tj)
 
-    for i in range(numSystems):
-        tempZRisk = 0
-        for j in range(numQueries):
-            eij = Si[i] * (Tj[j] / N)
-            xij_eij = mat[j, i] - eij
-            if eij != 0:
-                ziq = xij_eij / torch.sqrt(eij)
-            else:
-                ziq = 0
-            if xij_eij < 0:
-                ziq = (1 + alpha) * ziq
-            tempZRisk = tempZRisk + ziq
-        zRisk[i] = tempZRisk
-
-    c = numQueries
-    # for i in range(numSystems):
-    #     # ncd = norm.cdf(zRisk[i] / c)
-    #     value = zRisk[i] / c
-    #     m = torch.distributions.normal.Normal(torch.tensor([0.0]), torch.tensor([1.0]))
-    #     ncd = m.cdf(value)
-    #     geoRisk[i] = torch.sqrt((Si[i] / c) * ncd)
-
-    value = zRisk[0] / c
-    # m = torch.distributions.normal.Normal(torch.tensor([0.0]), torch.tensor([1.0]))
-    m = torch.distributions.normal.Normal(torch.tensor([0.0]), torch.tensor([1.0]))
-    ncd = m.cdf(value)
-    # return -1*torch.sqrt((Si[0] / c) * ncd)
-    # return -torch.sqrt((Si[0] / c) * ncd)
-    # return -torch.sqrt((Si[0] / c) * ncd)
-    return -torch.sqrt((Si[0] / c) * ncd)
-
-###############################################
-    # alpha = 3
-    # ##### IMPORTANT
-    # # This function takes a matrix (mat) of number of rows as a number of queries, and the number of collumns as the number of systems.
-    # # alpha is a float
-    # ##############
-    # numSystems = mat.shape[1]
-    # numQueries = mat.shape[0]
-    # Tj = torch.zeros(numQueries)
-    # # Si = torch.zeros(numSystems)
-    # geoRisk = torch.zeros(numSystems)
-    # # zRisk = torch.zeros(numSystems)
-    # mSi = torch.zeros(numSystems)
-    #
-    # for i in range(numSystems):
-    #     # Si[i] = torch.sum(mat[:, i])
-    #     mSi[i] = torch.mean(mat[:, i])
-    # Si = torch.sum(mat[:, 0])
-    # for j in range(numQueries):
-    #     Tj[j] = torch.sum(mat[j, :])
-    #
-    # N = torch.sum(Tj)
-    #
-    # # for i in range(numSystems):
-    # #     tempZRisk = 0
-    # #     for j in range(numQueries):
-    # #         eij = Si[i] * (Tj[j] / N)
-    # #         xij_eij = mat[j, i] - eij
-    # #         if eij != 0:
-    # #             ziq = xij_eij / torch.sqrt(eij)
-    # #         else:
-    # #             ziq = 0
-    # #         if xij_eij < 0:
-    # #             ziq = (1 + alpha) * ziq
-    # #         tempZRisk = tempZRisk + ziq
-    # #     zRisk[i] = tempZRisk
-    #
     # tempZRisk = 0
+    ####
+    # eij = Si * (Tj / N)
+    xij_eij = mat[:, 0] - Si * (Tj / N)
+    den = torch.sqrt(Si * (Tj / N))
+    div = xij_eij / den
+    less0 = (mat[:, 0] - Si * (Tj / N)) / (torch.sqrt(Si * (Tj / N))) < 0
+    less0 = alpha * less0
+    zRisk = div * less0 + div
+    zRisk = torch.sum(zRisk)
+    return -zRisk
+    # c = numQueries
+    # value = zRisk / c
+    # m = torch.distributions.normal.Normal(torch.tensor([0.0]), torch.tensor([1.0]))
+    # ncd = m.cdf(value)
+    # return torch.sqrt((Si / c) * ncd)
+    # return -torch.sqrt((Si / c) * ncd)
+
+def geo(mat, alpha):
+    alpha = torch.tensor([alpha], requires_grad=True, dtype=torch.float)
+    numQueries = mat.shape[0]
+    Si = torch.sum(mat[:, 0])
+    Tj = torch.sum(mat, dim=1)
+    N = torch.sum(Tj)
+
+    # tempZRisk = 0
+    ####
+    # eij = Si * (Tj / N)
+    xij_eij = mat[:, 0] - Si * (Tj / N)
+    den = torch.sqrt(Si * (Tj / N))
+    div = xij_eij / den
+    less0 = (mat[:, 0] - Si * (Tj / N)) / (torch.sqrt(Si * (Tj / N))) < 0
+    less0 = alpha * less0
+    zRisk = div * less0 + div
+    zRisk = torch.sum(zRisk)
+    # ####
     # for j in range(numQueries):
-    #     eij = Si[0] * (Tj[j] / N)
+    #     eij = Si * (Tj[j] / N)
     #     xij_eij = mat[j, 0] - eij
     #     if eij != 0:
     #         ziq = xij_eij / torch.sqrt(eij)
@@ -155,26 +110,14 @@ def georisk_listnet_loss(y_true, y_predicted, y_baselines):
     #     if xij_eij < 0:
     #         ziq = (1 + alpha) * ziq
     #     tempZRisk = tempZRisk + ziq
-    # # zRisk = tempZRisk
-    #
-    # c = numQueries
-    # # for i in range(numSystems):
-    # #     # ncd = norm.cdf(zRisk[i] / c)
-    # #     value = zRisk[i] / c
-    # #     m = torch.distributions.normal.Normal(torch.tensor([0.0]), torch.tensor([1.0]))
-    # #     ncd = m.cdf(value)
-    # #     geoRisk[i] = torch.sqrt((Si[i] / c) * ncd)
-    #
-    # # value = zRisk[0] / c
-    # value = tempZRisk
-    # m = torch.distributions.normal.Normal(torch.tensor([0.0]), torch.tensor([1.0]))
-    # ncd = m.cdf(value)
-    # # return -1*torch.sqrt((Si[0] / c) * ncd)
-    # # return -torch.sqrt((Si[0] / c) * ncd)
-    # # return -torch.sqrt((Si[0] / c) * ncd)
-    # return -torch.sqrt((Si / c) * ncd)
-    # # return -torch.sum(r)
+    # zRisk = tempZRisk
 
+    c = numQueries
+    value = zRisk / c
+    m = torch.distributions.normal.Normal(torch.tensor([0.0]), torch.tensor([1.0]))
+    ncd = m.cdf(value)
+    # return -torch.sqrt((Si / c) * ncd)
+    return -torch.sqrt((Si / c) * ncd)
 
 def clean_ndcg_loss(y_true, y_predicted):
     y_true = F.softmax(y_true, dim=1)
@@ -259,7 +202,14 @@ def ndcg(ys_true, ys_pred):
 
 
 if __name__ == '__main__':
-
+    # i = torch.tensor([[0.0500, 0.1500, 0.3000, 0.4500, 0.5500, 0.4000, 0.3500, 0.3000],
+    #               [0.2500, 0.2000, 0.3000, 0.3000, 0.3000, 0.3000, 0.3000, 0.2500],
+    #               [0.2500, 0.2500, 0.2500, 0.2500, 0.4000, 0.1500, 0.4000, 0.1500],
+    #               [0.4000, 0.2000, 0.4500, 0.2000, 0.4500, 0.2000, 0.2542, 0.2629],
+    #               [0.2802, 0.2975, 0.3061, 0.2918, 0.2994, 0.3147, 0.3301, 0.3378]])
+    # u = geo(i, 3)
+    # # 0.31438308416523303
+    # print(u)
     dataset_name = "2003_td_dataset"
     data_infos = svmDataset(dataset_name)
 
@@ -287,9 +237,11 @@ if __name__ == '__main__':
     batch_size_queries = 10
 
     net = Net(N_features)
-    opt = optim.Adam(net.parameters(), lr=0.1)
-    # opt = optim.Adam(net.parameters())
+    # opt = optim.Adam(net.parameters(), lr=0.01)
+    opt = optim.Adam(net.parameters())
+
     # opt = optim.SGD(net.parameters(), lr=0.01)
+    # opt = optim.SGD(net.parameters(), lr=1)###########com subtração min no geo
     # opt = optim.SGD(net.parameters(), lr=0.0001)
 
     for epoch in range(epochs):

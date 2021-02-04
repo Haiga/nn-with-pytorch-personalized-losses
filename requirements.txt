@@ -1,6 +1,5 @@
-numpy
-torch==1.4.0+cpu
-torchvision==0.5.0+cpu
+numpy==1.20.0
+# pip install torch==1.4.0+cpu torchvision==0.5.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 sklearn
-matplotlib
-pandas
+matplotlib==3.3.4
+pandas==1.2.1

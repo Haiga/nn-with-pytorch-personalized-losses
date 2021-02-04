@@ -1,25 +1,11 @@
 import torch
 
+
 # from allrank.data.dataset_loading import PADDED_Y_VALUE
 # from allrank.models.losses import DEFAULT_EPS
 
-def lambdaLoss(y_pred, y_true, eps=1e-10, padded_value_indicator=-1, weighing_scheme=None, k=None, sigma=1., mu=10.,
-               reduction="sum", reduction_log="binary"):
-    """
-    LambdaLoss framework for LTR losses implementations, introduced in "The LambdaLoss Framework for Ranking Metric Optimization".
-    Contains implementations of different weighing schemes corresponding to e.g. LambdaRank or RankNet.
-    :param y_pred: predictions from the model, shape [batch_size, slate_length]
-    :param y_true: ground truth labels, shape [batch_size, slate_length]
-    :param eps: epsilon value, used for numerical stability
-    :param padded_value_indicator: an indicator of the y_true index containing a padded item, e.g. -1
-    :param weighing_scheme: a string corresponding to a name of one of the weighing schemes
-    :param k: rank at which the loss is truncated
-    :param sigma: score difference weight used in the sigmoid function
-    :param mu: optional weight used in NDCGLoss2++ weighing scheme
-    :param reduction: losses reduction method, could be either a sum or a mean
-    :param reduction_log: logarithm variant used prior to masking and loss reduction, either binary or natural
-    :return: loss value, a torch.Tensor
-    """
+def lambdaMask(y_pred, y_true, eps=1e-10, padded_value_indicator=-1, weighing_scheme=None, k=None, sigma=1., mu=10.,
+               reduction="sum", reduction_log="binary", return_losses=False):
     device = y_pred.device
     y_pred = y_pred.clone()
     y_true = y_true.clone()
@@ -70,7 +56,33 @@ def lambdaLoss(y_pred, y_true, eps=1e-10, padded_value_indicator=-1, weighing_sc
     else:
         raise ValueError("Reduction logarithm base can be either natural or binary")
 
+    if return_losses:
+        return losses
+
     masked_losses = losses[padded_pairs_mask & ndcg_at_k_mask]
+
+    return masked_losses
+
+
+def lambdaLoss(y_pred, y_true, eps=1e-10, padded_value_indicator=-1, weighing_scheme=None, k=None, sigma=1., mu=10.,
+               reduction="sum", reduction_log="binary"):
+    """
+    LambdaLoss framework for LTR losses implementations, introduced in "The LambdaLoss Framework for Ranking Metric Optimization".
+    Contains implementations of different weighing schemes corresponding to e.g. LambdaRank or RankNet.
+    :param y_pred: predictions from the model, shape [batch_size, slate_length]
+    :param y_true: ground truth labels, shape [batch_size, slate_length]
+    :param eps: epsilon value, used for numerical stability
+    :param padded_value_indicator: an indicator of the y_true index containing a padded item, e.g. -1
+    :param weighing_scheme: a string corresponding to a name of one of the weighing schemes
+    :param k: rank at which the loss is truncated
+    :param sigma: score difference weight used in the sigmoid function
+    :param mu: optional weight used in NDCGLoss2++ weighing scheme
+    :param reduction: losses reduction method, could be either a sum or a mean
+    :param reduction_log: logarithm variant used prior to masking and loss reduction, either binary or natural
+    :return: loss value, a torch.Tensor
+    """
+    masked_losses = lambdaMask(y_pred, y_true, eps, padded_value_indicator, weighing_scheme, k, sigma, mu,
+                               reduction, reduction_log)
     if reduction == "sum":
         loss = -torch.sum(masked_losses)
     elif reduction == "mean":
@@ -95,7 +107,8 @@ def ndcgLoss2_scheme(G, D, *args):
 
 
 def lamdbaRank_scheme(G, D, *args):
-    return torch.abs(torch.pow(D[:, :, None], -1.) - torch.pow(D[:, None, :], -1.)) * torch.abs(G[:, :, None] - G[:, None, :])
+    return torch.abs(torch.pow(D[:, :, None], -1.) - torch.pow(D[:, None, :], -1.)) * torch.abs(
+        G[:, :, None] - G[:, None, :])
 
 
 def ndcgLoss2PP_scheme(G, D, *args):

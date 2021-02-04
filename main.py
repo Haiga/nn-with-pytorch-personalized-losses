@@ -74,12 +74,12 @@ def georisk_listnet_loss(y_true, y_predicted, y_baselines):
     less0 = alpha * less0
     zRisk = div * less0 + div
     zRisk = torch.sum(zRisk)
-    return -zRisk
-    # c = numQueries
-    # value = zRisk / c
-    # m = torch.distributions.normal.Normal(torch.tensor([0.0]), torch.tensor([1.0]))
-    # ncd = m.cdf(value)
-    # return torch.sqrt((Si / c) * ncd)
+
+    c = numQueries
+    value = zRisk / c
+    m = torch.distributions.normal.Normal(torch.tensor([0.0]), torch.tensor([1.0]))
+    ncd = m.cdf(value)
+    return torch.sqrt((Si / c) * ncd)
     # return -torch.sqrt((Si / c) * ncd)
 
 def geo(mat, alpha):

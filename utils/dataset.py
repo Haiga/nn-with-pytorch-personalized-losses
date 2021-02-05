@@ -25,8 +25,8 @@ class svmDataset():
 # TODO todas as entradas devem ser formatadas , remover #DOC-id do fim de cada linha do arquivo lib_svm
 
 
-def get_data(dataset_name, type_file="train"):
-    info_dataset = svmDataset(dataset_name)
+def get_data(info_dataset, type_file="train"):
+    # info_dataset = svmDataset(dataset_name)
 
     if type_file == "train":
         data = load_svmlight_file(info_dataset.train_data_path, query_id=True)
@@ -132,8 +132,8 @@ def store_baseline_data(name_method, dataset_name, queries_ids, predicted_values
                 existing_file.write(name_method + "\n")
 
 
-def get_baseline_data(dataset_name, type_file="train"):
-    info_dataset = svmDataset(dataset_name)
+def get_baseline_data(info_dataset, type_file="train"):
+    # info_dataset = svmDataset(dataset_name)
 
     if type_file == "train":
         data = load_baseline_file(info_dataset.baseline_train_data_path)

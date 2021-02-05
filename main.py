@@ -1,7 +1,10 @@
 import numpy as np
 import torch
 import torch.optim as optim
+from attr import asdict
 
+from architeture.multiLayer import make_model
+from config import Config
 from losses.lambdaL import lambdaLoss
 from losses.listnet import listnetLoss
 from losses.riskLosses.riskFunctions import geoRisk
@@ -15,11 +18,11 @@ if __name__ == '__main__':
     dataset_name = "2003_td_dataset"
     data_infos = svmDataset(dataset_name)
 
-    X_train, y_train = get_data(dataset_name, "test")
-    y_baseline_train = get_baseline_data(dataset_name, "test")
+    X_train, y_train = get_data(data_infos, "test")
+    y_baseline_train = get_baseline_data(data_infos, "test")
 
-    X_vali, y_vali = get_data(dataset_name, "vali")
-    y_baseline_vali = get_baseline_data(dataset_name, "vali")
+    X_vali, y_vali = get_data(data_infos, "vali")
+    y_baseline_vali = get_baseline_data(data_infos, "vali")
 
     X_train = torch.tensor(X_train, requires_grad=True)
     y_train = torch.tensor(y_train, requires_grad=True)
@@ -39,7 +42,9 @@ if __name__ == '__main__':
     batch_size_queries = 10
 
     # net = Net(N_features)
-    net = DoubleLayerNet(N_features)
+    # net = DoubleLayerNet(N_features)
+    config = Config.from_json("config.json")
+    net = make_model(n_features=N_features, **asdict(config.model, recurse=False))
     # opt = optim.Adam(net.parameters(), lr=0.01)
     opt = optim.Adam(net.parameters())
 
@@ -65,7 +70,7 @@ if __name__ == '__main__':
 
             opt.zero_grad()
             if len(batch_X) > 0:
-                batch_preds = net(batch_X)
+                batch_preds = net(batch_X, None, None)
 
                 batch_ys = torch.squeeze(batch_ys)
                 batch_ys_baseline = torch.squeeze(batch_ys_baseline)
@@ -92,7 +97,7 @@ if __name__ == '__main__':
                 opt.step()
             # print(f"ended {it}")
         with torch.no_grad():
-            valid_pred = net(X_vali)
+            valid_pred = net(X_vali, None, None)
             ndcg_score = torchNdcg(y_vali, valid_pred, k=None, return_type='tensor')
             ndcg_score_mean = ndcg_score.numpy()[0]
             mat = [ndcg_score]

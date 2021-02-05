@@ -48,7 +48,7 @@ if __name__ == '__main__':
     lr = float(sys.argv[14])
     weight_decay = float(sys.argv[15])
 
-    net_structure = float(sys.argv[16])
+    net_structure = sys.argv[16]
 
     data_infos = svmDataset(dataset_name)
     data_infos.train_data_path = home + "/BD/" + dataset_name + f"/Fold{fold}/Norm.train.txt"
@@ -59,18 +59,18 @@ if __name__ == '__main__':
     data_infos.baseline_vali_data_path = home + "/BD/" + dataset_name + f"/Fold{fold}/baseline.Norm.vali.txt"
 
     # Get data train - to train
-    X_train, y_train = get_data(dataset_name, "train")
-    y_baseline_train = get_baseline_data(dataset_name, "train")
+    X_train, y_train = get_data(data_infos, "train")
+    y_baseline_train = get_baseline_data(data_infos, "train")
     N_queries_train = len(X_train)
     assert len(y_train) == len(y_baseline_train)
 
     # Get data vali - to adjust
-    X_vali, y_vali = get_data(dataset_name, "vali")
-    y_baseline_vali = get_baseline_data(dataset_name, "vali")
+    X_vali, y_vali = get_data(data_infos, "vali")
+    y_baseline_vali = get_baseline_data(data_infos, "vali")
     assert len(y_vali) == len(y_baseline_vali)
 
     # Get data test - to predict
-    X_test, y_test = get_data(dataset_name, "test")
+    X_test, y_test = get_data(data_infos, "test")
     # y_baseline_test = get_baseline_data(dataset_name, "test")
 
     X_train = torch.tensor(X_train, requires_grad=True)
@@ -161,7 +161,7 @@ if __name__ == '__main__':
                                                                     normalization=normalization)
 
                         opt.zero_grad()
-                        log_loss_out.write(batch_loss.item())
+                        log_loss_out.write(f"{batch_loss.item()}")
                         log_loss_out.write("\n")
                         batch_loss.backward(retain_graph=True)
                         opt.step()
@@ -177,9 +177,10 @@ if __name__ == '__main__':
                         log_out.write(log + "\n")
                         test_pred = net(X_test, None, None)
                         test_pred_numpy = test_pred.numpy()
-                        with open(out_path + "/" + out_name + ".predict", 'w') as fo:
+                        with open(out_path + "/" + out_name + ".predict.txt", 'w') as fo:
                             for i in test_pred_numpy:
-                                fo.write(f"{i}\n")
+                                i_to_s = f"{i}\n".replace("[", "").replace("]", "").replace(" ", "")
+                                fo.write(i_to_s)
                         torch.save(net.state_dict(), out_path + "/models/" + out_name + ".model")
 
                     mat = [torch.tensor(ndcg_score)]

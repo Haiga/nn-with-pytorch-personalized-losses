@@ -95,10 +95,10 @@ def load_baseline_file(name_file):
     return baselines_by_query
 
 
-def store_baseline_data(name_method, dataset_name, queries_ids, predicted_values, append=True, type_file="train"):
+def store_baseline_data(name_method, info_dataset, queries_ids, predicted_values, append=True, type_file="train"):
     assert len(queries_ids) == len(predicted_values)
 
-    info_dataset = svmDataset(dataset_name)
+    # info_dataset = svmDataset(dataset_name)
 
     if type_file == "train":
         name_file = info_dataset.baseline_train_data_path

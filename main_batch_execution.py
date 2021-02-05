@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 import numpy as np
 import torch
@@ -21,7 +22,7 @@ torch.manual_seed(2020)
 np.random.seed(2020)
 
 if __name__ == '__main__':
-
+    start_code = time.time()
     home = sys.argv[1]
     dataset_name = sys.argv[2]
     fold = sys.argv[3]
@@ -105,6 +106,7 @@ if __name__ == '__main__':
         with open(out_path + "/logs/log_loss-" + out_name + ".txt", "w") as log_loss_out:
 
             for epoch in range(epochs):
+                start = time.time()
                 idx = torch.randperm(N_queries_train)
 
                 X_train = X_train[idx]
@@ -191,3 +193,11 @@ if __name__ == '__main__':
                     log = f"epoch: {epoch + 1} - ndcg@{k_validation}: {ndcg_score_mean:.4f} - georisk-{alpha}: {georisk_score:.4f}"
                     print(log)
                     log_out.write(log + "\n")
+                end = time.time()
+                log = f"epoch: {epoch + 1} - took {end - start}s"
+                print(log)
+                log_out.write(log + "\n")
+        end_code = time.time()
+        log = f"Total Execution time: {end_code - start_code}s"
+        print(log)
+        log_out.write(log + "\n")

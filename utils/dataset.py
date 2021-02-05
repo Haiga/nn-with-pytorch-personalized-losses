@@ -5,24 +5,26 @@ from sklearn.datasets import load_svmlight_file
 
 class svmDataset():
     def __init__(self, dataset_name):
+        self.train_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\train.txt"
+        self.test_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\test.txt"
+        self.vali_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\vali.txt"
+
+        self.baseline_train_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\baseline.train.txt"
+        self.baseline_test_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\baseline.test.txt"
+        self.baseline_vali_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\baseline.vali.txt"
+
+        self.docs_per_query = 1000
+        self.queries_on_test = 10
+        self.queries_on_train = 10
+
         if dataset_name == "2003_td_dataset":
-            self.train_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\train.txt"
-            self.test_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\test.txt"
-            self.vali_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\vali.txt"
-
-            self.baseline_train_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\baseline.train.txt"
-            self.baseline_test_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\baseline.test.txt"
-            self.baseline_vali_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\baseline.vali.txt"
-
-            self.docs_per_query = 1000
-            self.queries_on_test = 10
-            self.queries_on_train = 10
             self.num_features = 64
+            self.normalized_num_docs = True
 
-            self.normalized_num_docs = True  # TODO false (ver o que fazer)
+        elif "web10k" in dataset_name:
 
-
-# TODO todas as entradas devem ser formatadas , remover #DOC-id do fim de cada linha do arquivo lib_svm
+            self.num_features = 136
+            self.normalized_num_docs = True
 
 
 def get_data(info_dataset, type_file="train"):

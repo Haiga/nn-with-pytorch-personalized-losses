@@ -2,17 +2,18 @@ import torch
 import torch.nn.functional as F
 
 from losses.lambdaL import lambdaMask
-from losses.riskLosses.riskFunctions import geoRisk, zRisk
+from losses.riskLosses.riskFunctions import geoRisk, zRisk, allGeoRisk, maxGeoRisk
 
 
-def geoRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0):
-    p_y_baselines = F.softmax(y_baselines, dim=1)
+def geoRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, strategy=1):
+    p_y_baselines = torch.squeeze(F.softmax(y_baselines, dim=1))
     p_y_true = torch.squeeze(F.softmax(y_true, dim=1))
     p_y_predicted = torch.squeeze(F.softmax(y_predicted, dim=1))
 
     mat = [p_y_true * torch.log(p_y_predicted)]
     for i in range(p_y_baselines.shape[2]):
         mat.append(p_y_true * torch.log(p_y_baselines)[:, :, i])
+
     mat = torch.stack(mat)
     mat = torch.sum(mat, dim=2)
     mat = -1 * mat.t()
@@ -28,12 +29,21 @@ def geoRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0)
         # F.softmax(mat)
         # F.sigmoid(mat)
 
-    return geoRisk(mat, alpha, requires_grad=True)
+    # return geoRisk(mat, alpha, requires_grad=True)
 
-def geoRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, weighing_scheme="ndcgLoss2PP_scheme"):
-    p_y_baselines = torch.squeeze(y_baselines)
-    p_y_true = torch.squeeze(y_true)
-    p_y_predicted = torch.squeeze(y_predicted)
+    if strategy == 1:
+        mat = torch.cat([mat.t(), torch.unsqueeze(torch.max(mat, dim=1)[0], dim=0)]).t()
+        return -(geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
+    elif strategy == 2:
+        return -(geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
+    else:
+        return geoRisk(mat, alpha, requires_grad=True)
+
+
+def geoRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, weighing_scheme="ndcgLoss2PP_scheme", strategy=1):
+    p_y_baselines = torch.squeeze(F.softmax(y_baselines, dim=1))
+    p_y_true = torch.squeeze(F.softmax(y_true, dim=1))
+    p_y_predicted = torch.squeeze(F.softmax(y_predicted, dim=1))
 
     p_y_predicted_mask = torch.sum(
         torch.sum(lambdaMask(p_y_predicted, p_y_true, weighing_scheme=weighing_scheme, return_losses=True), dim=1),
@@ -60,7 +70,16 @@ def geoRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, 
         # F.softmax(mat)
         # F.sigmoid(mat)
 
-    return geoRisk(mat, alpha, requires_grad=True)
+    # return geoRisk(mat, alpha, requires_grad=True)
+
+    if strategy == 1:
+        mat = torch.cat([mat.t(), torch.unsqueeze(torch.max(mat, dim=1)[0], dim=0)]).t()
+        return -(geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
+    elif strategy == 2:
+        return -(geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
+    else:
+        return geoRisk(mat, alpha, requires_grad=True)
+
 
 def zRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0):
     p_y_baselines = F.softmax(y_baselines, dim=1)
@@ -89,9 +108,9 @@ def zRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0):
 
 
 def zRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, weighing_scheme="ndcgLoss2PP_scheme"):
-    p_y_baselines = torch.squeeze(y_baselines)
-    p_y_true = torch.squeeze(y_true)
-    p_y_predicted = torch.squeeze(y_predicted)
+    p_y_baselines = torch.squeeze(F.softmax(y_baselines, dim=1))
+    p_y_true = torch.squeeze(F.softmax(y_true, dim=1))
+    p_y_predicted = torch.squeeze(F.softmax(y_predicted, dim=1))
 
     p_y_predicted_mask = torch.sum(
         torch.sum(lambdaMask(p_y_predicted, p_y_true, weighing_scheme=weighing_scheme, return_losses=True), dim=1),
@@ -157,9 +176,9 @@ def tRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0):
 
 
 def tRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, weighing_scheme="ndcgLoss2PP_scheme"):
-    p_y_baselines = torch.squeeze(y_baselines, dim=1)
-    p_y_true = torch.squeeze(y_true, dim=1)
-    p_y_predicted = torch.squeeze(y_predicted, dim=1)
+    p_y_baselines = torch.squeeze(F.softmax(y_baselines, dim=1))
+    p_y_true = torch.squeeze(F.softmax(y_true, dim=1))
+    p_y_predicted = torch.squeeze(F.softmax(y_predicted, dim=1))
 
     p_queries_y_true = lambdaMask(p_y_predicted, p_y_true, weighing_scheme=weighing_scheme, return_losses=True)
     p_queries_y_baselines = lambdaMask(p_y_predicted, p_y_baselines, weighing_scheme=weighing_scheme,

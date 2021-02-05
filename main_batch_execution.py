@@ -6,7 +6,9 @@ import torch
 import torch.optim as optim
 from attr import asdict
 
+from architeture.doubleLayer import DoubleLayerNet
 from architeture.multiLayer import make_model
+from architeture.tripleLayer import TripleLayerNet
 from config import Config
 from losses import *
 from losses.lambdaL import lambdaLoss
@@ -20,33 +22,40 @@ np.random.seed(2020)
 
 if __name__ == '__main__':
 
-    dataset_name = sys.argv[1]
-    fold = sys.argv[2]
-    epochs = int(sys.argv[3])
-    batch_size_queries = int(sys.argv[4])
-    name_loss = sys.argv[5]
+    home = sys.argv[1]
+    dataset_name = sys.argv[2]
+    fold = sys.argv[3]
+    epochs = int(sys.argv[4])
+    batch_size_queries = int(sys.argv[5])
+    name_loss = sys.argv[6]
 
-    out_path = sys.argv[6]
-    out_name = sys.argv[7]
+    out_path = home + "/" + sys.argv[7]
+    out_name = sys.argv[8]
 
     if not os.path.isdir(out_path + "/logs/"):
         os.makedirs(out_path + "/logs/")
 
-    alpha = int(sys.argv[8])
-    normalization = int(sys.argv[9])
+    if not os.path.isdir(out_path + "/models/"):
+        os.makedirs(out_path + "/models/")
 
-    k_validation = int(sys.argv[10])
-    optimization = sys.argv[11]
-    lr = float(sys.argv[12])
-    weight_decay = float(sys.argv[13])
+    alpha = int(sys.argv[9])
+    normalization = int(sys.argv[10])
+    strategy = int(sys.argv[11])
+
+    k_validation = int(sys.argv[12])
+    optimization = sys.argv[13]
+    lr = float(sys.argv[14])
+    weight_decay = float(sys.argv[15])
+
+    net_structure = float(sys.argv[16])
 
     data_infos = svmDataset(dataset_name)
-    data_infos.train_data_path = dataset_name + f"/Fold{fold}/Norm.train.txt"
-    data_infos.test_data_path = dataset_name + f"/Fold{fold}/Norm.test.txt"
-    data_infos.vali_data_path = dataset_name + f"/Fold{fold}/Norm.vali.txt"
-    data_infos.baseline_train_data_path = dataset_name + f"/Fold{fold}/baseline.Norm.train.txt"
-    data_infos.baseline_test_data_path = dataset_name + f"/Fold{fold}/baseline.Norm.test.txt"
-    data_infos.baseline_vali_data_path = dataset_name + f"/Fold{fold}/baseline.Norm.vali.txt"
+    data_infos.train_data_path = home + "/BD/" + dataset_name + f"/Fold{fold}/Norm.train.txt"
+    data_infos.test_data_path = home + "/BD/" + dataset_name + f"/Fold{fold}/Norm.test.txt"
+    data_infos.vali_data_path = home + "/BD/" + dataset_name + f"/Fold{fold}/Norm.vali.txt"
+    data_infos.baseline_train_data_path = home + "/BD/" + dataset_name + f"/Fold{fold}/baseline.Norm.train.txt"
+    data_infos.baseline_test_data_path = home + "/BD/" + dataset_name + f"/Fold{fold}/baseline.Norm.test.txt"
+    data_infos.baseline_vali_data_path = home + "/BD/" + dataset_name + f"/Fold{fold}/baseline.Norm.vali.txt"
 
     # Get data train - to train
     X_train, y_train = get_data(dataset_name, "train")
@@ -76,9 +85,14 @@ if __name__ == '__main__':
 
     N_features = data_infos.num_features
 
-    # net = DoubleLayerNet(N_features)
     config = Config.from_json("config.json")
-    net = make_model(n_features=N_features, **asdict(config.model, recurse=False))
+
+    if net_structure == "allrank":
+        net = make_model(n_features=N_features, **asdict(config.model, recurse=False))
+    elif net_structure == "double":
+        net = DoubleLayerNet(N_features)
+    elif net_structure == "triple":
+        net = TripleLayerNet(N_features)
 
     if optimization == "Adam":
         opt = optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
@@ -87,8 +101,8 @@ if __name__ == '__main__':
 
     best_ndcg_score = -1
 
-    with open(out_path + "/logs/" + out_name, "w") as log_out:
-        with open(out_path + "/logs/log_loss-" + out_name, "w") as log_loss_out:
+    with open(out_path + "/logs/" + out_name + ".log.txt", "w") as log_out:
+        with open(out_path + "/logs/log_loss-" + out_name + ".txt", "w") as log_loss_out:
 
             for epoch in range(epochs):
                 idx = torch.randperm(N_queries_train)
@@ -115,23 +129,25 @@ if __name__ == '__main__':
 
                         if name_loss == "lambdaLoss":
                             batch_loss = lambdaLoss(batch_preds, batch_ys, weighing_scheme="ndcgLoss2PP_scheme")
+
                         elif name_loss == "listnetLoss":
                             batch_loss = listnetLoss(batch_ys, batch_preds)
+
                         elif name_loss == "geoRiskListnetLoss":
-                            batch_loss = riskLosses.geoRiskListnetLoss(batch_ys, batch_preds,
-                                                                       torch.mean(batch_ys_baseline, dim=2), alpha=alpha,
-                                                                       normalization=normalization)
+                            batch_loss = riskLosses.geoRiskListnetLoss(batch_ys, batch_preds, batch_ys_baseline,
+                                                                       alpha=alpha,
+                                                                       normalization=normalization, strategy=strategy)
                         elif name_loss == "geoRiskLambdaLoss":
-                            batch_loss = riskLosses.geoRiskLambdaLoss(batch_ys, batch_preds,
-                                                                      torch.mean(batch_ys_baseline, dim=2), alpha=alpha,
-                                                                      normalization=normalization)
+                            batch_loss = riskLosses.geoRiskLambdaLoss(batch_ys, batch_preds, batch_ys_baseline,
+                                                                      alpha=alpha,
+                                                                      normalization=normalization, strategy=strategy)
                         elif name_loss == "zRiskListnetLoss":
-                            batch_loss = riskLosses.zRiskListnetLoss(batch_ys, batch_preds,
-                                                                     torch.mean(batch_ys_baseline, dim=2), alpha=alpha,
+                            batch_loss = riskLosses.zRiskListnetLoss(batch_ys, batch_preds, batch_ys_baseline,
+                                                                     alpha=alpha,
                                                                      normalization=normalization)
                         elif name_loss == "zRiskLambdaLoss":
-                            batch_loss = riskLosses.zRiskLambdaLoss(batch_ys, batch_preds,
-                                                                    torch.mean(batch_ys_baseline, dim=2), alpha=alpha,
+                            batch_loss = riskLosses.zRiskLambdaLoss(batch_ys, batch_preds, batch_ys_baseline,
+                                                                    alpha=alpha,
                                                                     normalization=normalization)
                         elif name_loss == "tRiskListnetLoss":
                             batch_loss = riskLosses.tRiskListnetLoss(batch_ys, batch_preds,
@@ -159,9 +175,10 @@ if __name__ == '__main__':
                         log_out.write(log + "\n")
                         test_pred = net(X_test, None, None)
                         test_pred_numpy = test_pred.numpy()
-                        with open(out_path + "/" + out_name, 'w') as fo:
+                        with open(out_path + "/" + out_name + ".predict", 'w') as fo:
                             for i in test_pred_numpy:
                                 fo.write(f"{i}\n")
+                        torch.save(net.state_dict(), out_path + "/models/" + out_name + ".model")
 
                     mat = [torch.tensor(ndcg_score)]
                     for i in range(y_baseline_vali.shape[2]):

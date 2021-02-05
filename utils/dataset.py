@@ -17,7 +17,7 @@ class svmDataset():
         self.queries_on_test = 10
         self.queries_on_train = 10
 
-        if dataset_name == "2003_td_dataset":
+        if "2003_td" in dataset_name:
             self.num_features = 64
             self.normalized_num_docs = True
 

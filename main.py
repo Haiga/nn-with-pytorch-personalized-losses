@@ -4,9 +4,11 @@ import torch.optim as optim
 from attr import asdict
 
 from architeture.multiLayer import make_model
+from architeture.tripleLayer import TripleLayerNet
 from config import Config
 from losses.lambdaL import lambdaLoss
 from losses.listnet import listnetLoss
+from losses.ordinal import ordinalLoss
 from losses.riskLosses.riskFunctions import geoRisk
 from utils.dataset import get_data, svmDataset, get_baseline_data
 from architeture.doubleLayer import DoubleLayerNet
@@ -28,9 +30,9 @@ if __name__ == '__main__':
     y_train = torch.tensor(y_train, requires_grad=True)
     y_baseline_train = torch.tensor(y_baseline_train, requires_grad=True)
 
-    X_vali = torch.tensor(X_vali, requires_grad=False)
-    y_vali = torch.tensor(y_vali, requires_grad=False)
-    y_baseline_vali = torch.tensor(y_baseline_vali, requires_grad=False)
+    X_vali = torch.tensor(X_vali, requires_grad=True)
+    y_vali = torch.tensor(y_vali, requires_grad=True)
+    y_baseline_vali = torch.tensor(y_baseline_vali, requires_grad=True)
 
     # N_queries = 100
     N_queries_train = 10
@@ -42,10 +44,12 @@ if __name__ == '__main__':
     batch_size_queries = 10
 
     # net = Net(N_features)
-    # net = DoubleLayerNet(N_features)
-    config = Config.from_json("config.json")
-    net = make_model(n_features=N_features, **asdict(config.model, recurse=False))
+    net = DoubleLayerNet(N_features)
+    # net = TripleLayerNet(N_features)
+    # config = Config.from_json("config.json")
+    # net = make_model(n_features=N_features, **asdict(config.model, recurse=False))
     # opt = optim.Adam(net.parameters(), lr=0.01)
+    # opt = optim.Adam(net.parameters(), lr=0.1)
     opt = optim.Adam(net.parameters())
 
     # opt = optim.SGD(net.parameters(), lr=0.01)
@@ -76,6 +80,7 @@ if __name__ == '__main__':
                 batch_ys_baseline = torch.squeeze(batch_ys_baseline)
                 batch_preds = torch.squeeze(batch_preds)
 
+                # batch_loss = ordinalLoss(batch_preds[0], batch_ys[0], 2)
                 # batch_loss = lambdaLoss(batch_preds, batch_ys, weighing_scheme="ndcgLoss2PP_scheme")
                 # batch_loss = geoLambdaLoss(batch_preds, batch_ys, weighing_scheme="ndcgLoss2PP_scheme")
                 # batch_loss = ndcg_loss(batch_ys, batch_preds)
@@ -84,9 +89,15 @@ if __name__ == '__main__':
                 # batch_loss = listnetLoss(batch_ys, batch_preds)
                 # batch_loss = georisk_listnet_loss(batch_ys, batch_preds, batch_ys_baseline)
                 # batch_loss = losses.riskLosses.geoRiskListnetLoss(batch_ys, batch_preds, batch_ys_baseline, alpha=2)
-                batch_loss = losses.riskLosses.tRiskListnetLoss(batch_ys, batch_preds,
-                                                                torch.mean(batch_ys_baseline, dim=2), alpha=1,
-                                                                normalization=2)
+                # batch_loss = losses.riskLosses.tRiskListnetLoss(batch_ys, batch_preds,
+                #                                                 torch.mean(batch_ys_baseline, dim=2), alpha=1,
+                #                                                 normalization=2)######
+                # batch_loss = losses.riskLosses.tRiskListnetLoss(batch_ys, batch_preds,
+                #                                                 batch_ys_baseline[:,:,0], alpha=1,
+                #                                                 normalization=2)  ######
+                batch_loss = losses.riskLosses.geoRiskListnetLoss(batch_ys, batch_preds,batch_ys_baseline, alpha=1,
+                                                                normalization=1)
+
                 # batch_loss = losses.riskLosses.tRiskLambdaLoss(batch_ys, batch_preds,
                 #                                                 torch.mean(batch_ys_baseline, dim=2), alpha=1,
                 #                                                 normalization=0)
@@ -94,6 +105,7 @@ if __name__ == '__main__':
                 #                                                batch_ys_baseline, alpha=1,
                 #                                                normalization=1)
                 batch_loss.backward(retain_graph=True)
+                print(batch_loss)
                 opt.step()
             # print(f"ended {it}")
         with torch.no_grad():

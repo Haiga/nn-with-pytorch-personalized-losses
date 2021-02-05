@@ -37,20 +37,24 @@ def mNdcg(true_relevance, pred_relevance, k=5, no_relevant=True, gains='linear',
     return [ndcg(true_relevance[i], pred_relevance[i], k, no_relevant, gains, use_numpy) for i in range(num_queries)]
 
 
-def torchNdcg(ys_true, ys_pred):
-    def dcg(ys_true, ys_pred):
+def torchNdcg(ys_true, ys_pred, k=None, return_type='list'):
+    def dcg(ys_true, ys_pred, k=None):
         _, argsort = torch.sort(ys_pred, descending=True, dim=0)
         ys_true_sorted = ys_true[argsort]
         ret = 0
+        if not k is None:
+            ys_true_sorted = ys_true_sorted[:k]
         for i, l in enumerate(ys_true_sorted, 1):
             ret += (2 ** l - 1) / np.log2(1 + i)
         return ret
 
     r = []
     for q in range(ys_true.shape[0]):
-        ideal_dcg = dcg(ys_true[q], ys_true[q])
-        pred_dcg = dcg(ys_true[q], ys_pred[q])
+        ideal_dcg = dcg(ys_true[q], ys_true[q], k=k)
+        pred_dcg = dcg(ys_true[q], ys_pred[q], k=k)
         r.append(pred_dcg / ideal_dcg)
+    if return_type == 'tensor':
+        return torch.tensor(r)
     return r
 
 

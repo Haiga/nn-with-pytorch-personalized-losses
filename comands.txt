@@ -1,6 +1,6 @@
-python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 geoRiskListnetLoss resultados geoRiskListnetLoss 5 1 1 100 Adam 0.001 0 double >> ./execlogs/geoRiskListnetLoss.log
-python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 geoRiskLambdaLoss resultados geoRiskLambdaLoss 5 1 1 100 SGD 0.001 0 double >> ./execlogs/geoRiskLambdaLoss.log
-python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 zRiskListnetLoss resultados zRiskListnetLoss 1 1 1 100 Adam 0.001 0 double >> ./execlogs/zRiskListnetLoss.log
-python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 zRiskLambdaLoss resultados zRiskLambdaLoss 1 1 1 100 SGD 0.001 0 double >> ./execlogs/zRiskLambdaLoss.log
-python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 tRiskListnetLoss resultados tRiskListnetLoss 1 2 1 100 Adam 0.001 0 double >> ./execlogs/tRiskListnetLoss.log
-python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 tRiskLambdaLoss resultados tRiskLambdaLoss 1 2 1 100 SGD 0.001 0 double >>./execlogs/tRiskLambdaLoss.log
+python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 geoRiskListnetLoss resultados geoRiskListnetLoss 5 1 1 100 Adam 0.001 0 double > ./execlogs/geoRiskListnetLoss.log
+python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 geoRiskLambdaLoss resultados geoRiskLambdaLoss 5 1 1 100 SGD 0.001 0 double > ./execlogs/geoRiskLambdaLoss.log
+python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 zRiskListnetLoss resultados zRiskListnetLoss 1 1 1 100 Adam 0.001 0 double > ./execlogs/zRiskListnetLoss.log
+python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 zRiskLambdaLoss resultados zRiskLambdaLoss 1 1 1 100 SGD 0.001 0 double > ./execlogs/zRiskLambdaLoss.log
+python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 tRiskListnetLoss resultados tRiskListnetLoss 1 2 1 100 Adam 0.001 0 double > ./execlogs/tRiskListnetLoss.log
+python -u pytorch-risk-loss/main_batch_execution.py ./ web10k 1 20 200 tRiskLambdaLoss resultados tRiskLambdaLoss 1 2 1 100 SGD 0.001 0 double > ./execlogs/tRiskLambdaLoss.log

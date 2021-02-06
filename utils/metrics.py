@@ -1,5 +1,48 @@
+import math
+
 import numpy as np
 import torch
+from scipy.stats import norm
+
+
+def getGeoRiskDefault(mat, alpha):
+    numSystems = mat.shape[1]
+    numQueries = mat.shape[0]
+    Tj = np.array([0.0] * numQueries)
+    Si = np.array([0.0] * numSystems)
+    geoRisk = np.array([0.0] * numSystems)
+    zRisk = np.array([0.0] * numSystems)
+    mSi = np.array([0.0] * numSystems)
+
+    for i in range(numSystems):
+        Si[i] = np.sum(mat[:, i])
+        mSi[i] = np.mean(mat[:, i])
+
+    for j in range(numQueries):
+        Tj[j] = np.sum(mat[j, :])
+
+    N = np.sum(Tj)
+
+    for i in range(numSystems):
+        tempZRisk = 0
+        for j in range(numQueries):
+            eij = Si[i] * (Tj[j] / N)
+            xij_eij = mat[j, i] - eij
+            if eij != 0:
+                ziq = xij_eij / math.sqrt(eij)
+            else:
+                ziq = 0
+            if xij_eij < 0:
+                ziq = (1 + alpha) * ziq
+            tempZRisk = tempZRisk + ziq
+        zRisk[i] = tempZRisk
+
+    c = numQueries
+    for i in range(numSystems):
+        ncd = norm.cdf(zRisk[i] / c)
+        geoRisk[i] = math.sqrt((Si[i] / c) * ncd)
+
+    return geoRisk
 
 
 def dcg(true_relevance, pred_relevance, k=5, gains='linear', use_numpy=False):

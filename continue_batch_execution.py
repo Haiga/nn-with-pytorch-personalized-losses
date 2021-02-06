@@ -51,7 +51,7 @@ if __name__ == '__main__':
     net_structure = sys.argv[16]
     run_path = sys.argv[17]
 
-    negative = int(sys.argv[18])
+    pre_charge_weights = sys.argv[18]
 
     data_infos = svmDataset(dataset_name)
     data_infos.train_data_path = home + "/BD/" + dataset_name + f"/Fold{fold}/Norm.train.txt"
@@ -97,6 +97,9 @@ if __name__ == '__main__':
     elif net_structure == "triple":
         net = TripleLayerNet(N_features)
 
+    if pre_charge_weights != "":
+        net.load_state_dict(torch.load(pre_charge_weights))
+
     if optimization == "Adam":
         opt = optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
     elif optimization == "SGD":
@@ -140,27 +143,27 @@ if __name__ == '__main__':
                         elif name_loss == "geoRiskListnetLoss":
                             batch_loss = riskLosses.geoRiskListnetLoss(batch_ys, batch_preds, batch_ys_baseline,
                                                                        alpha=alpha,
-                                                                       normalization=normalization, strategy=strategy, negative=negative)
+                                                                       normalization=normalization, strategy=strategy)
                         elif name_loss == "geoRiskLambdaLoss":
                             batch_loss = riskLosses.geoRiskLambdaLoss(batch_ys, batch_preds, batch_ys_baseline,
                                                                       alpha=alpha,
-                                                                      normalization=normalization, strategy=strategy, negative=negative)
+                                                                      normalization=normalization, strategy=strategy)
                         elif name_loss == "zRiskListnetLoss":
                             batch_loss = riskLosses.zRiskListnetLoss(batch_ys, batch_preds, batch_ys_baseline,
                                                                      alpha=alpha,
-                                                                     normalization=normalization, negative=negative)
+                                                                     normalization=normalization)
                         elif name_loss == "zRiskLambdaLoss":
                             batch_loss = riskLosses.zRiskLambdaLoss(batch_ys, batch_preds, batch_ys_baseline,
                                                                     alpha=alpha,
-                                                                    normalization=normalization, negative=negative)
+                                                                    normalization=normalization)
                         elif name_loss == "tRiskListnetLoss":
                             batch_loss = riskLosses.tRiskListnetLoss(batch_ys, batch_preds,
                                                                      torch.mean(batch_ys_baseline, dim=2), alpha=alpha,
-                                                                     normalization=normalization, negative=negative)
+                                                                     normalization=normalization)
                         elif name_loss == "tRiskLambdaLoss":
                             batch_loss = riskLosses.tRiskLambdaLoss(batch_ys, batch_preds,
                                                                     torch.mean(batch_ys_baseline, dim=2), alpha=alpha,
-                                                                    normalization=normalization, negative=negative)
+                                                                    normalization=normalization)
 
                         opt.zero_grad()
                         log_loss_out.write(f"{batch_loss.item()}")
@@ -190,10 +193,10 @@ if __name__ == '__main__':
                         ndcg_score_baseline_i = mNdcg(y_vali.numpy(), y_baseline_vali[:, :, i], k=k_validation)
                         mat.append(torch.tensor(ndcg_score_baseline_i))
                     mat = torch.stack(mat).t()
-                    georisk_score = geoRisk(mat, 5, requires_grad=False)
+                    georisk_score = geoRisk(mat, alpha, requires_grad=False)
                     georisk_score = georisk_score.numpy()[0]
 
-                    log = f"epoch: {epoch + 1} - ndcg@{k_validation}: {ndcg_score_mean:.4f} - georisk-{5}: {georisk_score:.4f}"
+                    log = f"epoch: {epoch + 1} - ndcg@{k_validation}: {ndcg_score_mean:.4f} - georisk-{alpha}: {georisk_score:.4f}"
                     print(log)
                     log_out.write(log + "\n")
                 end = time.time()

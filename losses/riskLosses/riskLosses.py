@@ -5,7 +5,7 @@ from losses.lambdaL import lambdaMask
 from losses.riskLosses.riskFunctions import geoRisk, zRisk, allGeoRisk, maxGeoRisk
 
 
-def geoRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, strategy=1):
+def geoRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, strategy=1, negative=1):
     p_y_baselines = torch.squeeze(F.softmax(y_baselines, dim=1))
     p_y_true = torch.squeeze(F.softmax(y_true, dim=1))
     p_y_predicted = torch.squeeze(F.softmax(y_predicted, dim=1))
@@ -33,14 +33,14 @@ def geoRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0,
 
     if strategy == 1:
         mat = torch.cat([mat.t(), torch.unsqueeze(torch.max(mat, dim=1)[0], dim=0)]).t()
-        return (geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
+        return negative*(geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
     elif strategy == 2:
-        return -(geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
+        return negative*(geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
     else:
-        return geoRisk(mat, alpha, requires_grad=True)
+        return negative*geoRisk(mat, alpha, requires_grad=True)
 
 
-def geoRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, weighing_scheme="ndcgLoss2PP_scheme", strategy=1):
+def geoRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, weighing_scheme="ndcgLoss2PP_scheme", strategy=1, negative=1):
     p_y_baselines = torch.squeeze(F.softmax(y_baselines, dim=1))
     p_y_true = torch.squeeze(F.softmax(y_true, dim=1))
     p_y_predicted = torch.squeeze(F.softmax(y_predicted, dim=1))
@@ -74,14 +74,14 @@ def geoRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, 
 
     if strategy == 1:
         mat = torch.cat([mat.t(), torch.unsqueeze(torch.max(mat, dim=1)[0], dim=0)]).t()
-        return (geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
+        return negative*(geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
     elif strategy == 2:
-        return -(geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
+        return negative*(geoRisk(mat, alpha, requires_grad=True) - maxGeoRisk(mat, alpha, requires_grad=True)) ** 2
     else:
-        return geoRisk(mat, alpha, requires_grad=True)
+        return negative*geoRisk(mat, alpha, requires_grad=True)
 
 
-def zRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0):
+def zRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, negative=1):
     p_y_baselines = F.softmax(y_baselines, dim=1)
     p_y_true = torch.squeeze(F.softmax(y_true, dim=1))
     p_y_predicted = torch.squeeze(F.softmax(y_predicted, dim=1))
@@ -104,10 +104,10 @@ def zRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0):
         # F.softmax(mat)
         # F.sigmoid(mat)
 
-    return -zRisk(mat, alpha, requires_grad=True)
+    return negative*zRisk(mat, alpha, requires_grad=True)
 
 
-def zRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, weighing_scheme="ndcgLoss2PP_scheme"):
+def zRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, weighing_scheme="ndcgLoss2PP_scheme", negative=1):
     p_y_baselines = torch.squeeze(F.softmax(y_baselines, dim=1))
     p_y_true = torch.squeeze(F.softmax(y_true, dim=1))
     p_y_predicted = torch.squeeze(F.softmax(y_predicted, dim=1))
@@ -137,10 +137,10 @@ def zRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, we
         # F.softmax(mat)
         # F.sigmoid(mat)
 
-    return -zRisk(mat, alpha, requires_grad=True)
+    return negative*zRisk(mat, alpha, requires_grad=True)
 
 
-def tRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0):
+def tRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, negative=1):
     # p_y_baselines = F.softmax(y_baselines, dim=1)
     p_y_baselines = torch.squeeze(F.softmax(y_baselines, dim=1))
     p_y_true = torch.squeeze(F.softmax(y_true, dim=1))
@@ -172,10 +172,10 @@ def tRiskListnetLoss(y_true, y_predicted, y_baselines, alpha, normalization=0):
 
     urisk = torch.mean(delta)
     se_urisk = torch.std(delta)
-    return -urisk / se_urisk
+    return negative*urisk / se_urisk
 
 
-def tRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, weighing_scheme="ndcgLoss2PP_scheme"):
+def tRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, weighing_scheme="ndcgLoss2PP_scheme", negative=1):
     p_y_baselines = torch.squeeze(F.softmax(y_baselines, dim=1))
     p_y_true = torch.squeeze(F.softmax(y_true, dim=1))
     p_y_predicted = torch.squeeze(F.softmax(y_predicted, dim=1))
@@ -207,4 +207,4 @@ def tRiskLambdaLoss(y_true, y_predicted, y_baselines, alpha, normalization=0, we
 
     urisk = torch.mean(delta)
     se_urisk = torch.std(delta)
-    return -urisk / se_urisk
+    return negative*urisk / se_urisk

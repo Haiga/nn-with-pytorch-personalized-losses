@@ -2,7 +2,7 @@
   "model": {
     "fc_model": {
       "sizes": [
-        8, 16, 8
+        128, 256, 128
       ],
       "input_norm": false,
       "activation": null,

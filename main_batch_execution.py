@@ -86,9 +86,8 @@ if __name__ == '__main__':
 
     N_features = data_infos.num_features
 
-    config = Config.from_json("config.json")
-
     if net_structure == "allrank":
+        config = Config.from_json("config.json")
         net = make_model(n_features=N_features, **asdict(config.model, recurse=False))
     elif net_structure == "double":
         net = DoubleLayerNet(N_features)

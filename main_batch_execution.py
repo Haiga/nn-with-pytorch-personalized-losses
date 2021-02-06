@@ -30,7 +30,7 @@ if __name__ == '__main__':
     batch_size_queries = int(sys.argv[5])
     name_loss = sys.argv[6]
 
-    out_path = home + "/" + sys.argv[7]
+    out_path = home + "/" + sys.argv[7] + "/Fold" + fold
     out_name = sys.argv[8]
 
     if not os.path.isdir(out_path + "/logs/"):
@@ -140,11 +140,13 @@ if __name__ == '__main__':
                         elif name_loss == "geoRiskListnetLoss":
                             batch_loss = riskLosses.geoRiskListnetLoss(batch_ys, batch_preds, batch_ys_baseline,
                                                                        alpha=alpha,
-                                                                       normalization=normalization, strategy=strategy, negative=negative)
+                                                                       normalization=normalization, strategy=strategy,
+                                                                       negative=negative)
                         elif name_loss == "geoRiskLambdaLoss":
                             batch_loss = riskLosses.geoRiskLambdaLoss(batch_ys, batch_preds, batch_ys_baseline,
                                                                       alpha=alpha,
-                                                                      normalization=normalization, strategy=strategy, negative=negative)
+                                                                      normalization=normalization, strategy=strategy,
+                                                                      negative=negative)
                         elif name_loss == "zRiskListnetLoss":
                             batch_loss = riskLosses.zRiskListnetLoss(batch_ys, batch_preds, batch_ys_baseline,
                                                                      alpha=alpha,

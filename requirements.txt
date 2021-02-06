@@ -3,4 +3,4 @@ numpy==1.19.5
 sklearn
 matplotlib==3.3.4
 # pandas==1.2.1
-attrs=20.3.0
+attrs==20.3.0

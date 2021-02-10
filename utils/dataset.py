@@ -1,17 +1,20 @@
 import numpy as np
 import os
 from sklearn.datasets import load_svmlight_file
+from joblib import Memory
+
+mem = Memory("./mycache")
 
 
 class svmDataset():
     def __init__(self, dataset_name):
-        self.train_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\train.txt"
-        self.test_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\test.txt"
-        self.vali_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\vali.txt"
+        self.train_data_path = "D:\\Colecoes\\BD\\2003_td_dataset\\Fold1\\train.txt"
+        self.test_data_path = "D:\\Colecoes\\BD\\2003_td_dataset\\Fold1\\test.txt"
+        self.vali_data_path = "D:\\Colecoes\\BD\\2003_td_dataset\\Fold1\\vali.txt"
 
-        self.baseline_train_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\baseline.train.txt"
-        self.baseline_test_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\baseline.test.txt"
-        self.baseline_vali_data_path = "D:\\Colecoes\\2003_td_dataset\\Fold1\\baseline.vali.txt"
+        self.baseline_train_data_path = "D:\\Colecoes\\BD\\2003_td_dataset\\Fold1\\baseline.train.txt"
+        self.baseline_test_data_path = "D:\\Colecoes\\BD\\2003_td_dataset\\Fold1\\baseline.test.txt"
+        self.baseline_vali_data_path = "D:\\Colecoes\\BD\\2003_td_dataset\\Fold1\\baseline.vali.txt"
 
         self.docs_per_query = 1000
         self.queries_on_test = 10
@@ -27,6 +30,7 @@ class svmDataset():
             self.normalized_num_docs = True
 
 
+@mem.cache
 def get_data(info_dataset, type_file="train"):
     # info_dataset = svmDataset(dataset_name)
 

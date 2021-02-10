@@ -97,7 +97,10 @@ def torchNdcg(ys_true, ys_pred, k=None, return_type='list'):
         pred_dcg = dcg(ys_true[q], ys_pred[q], k=k)
         r.append(pred_dcg / ideal_dcg)
     if return_type == 'tensor':
-        return torch.tensor(r)
+        r = torch.tensor(r)
+        r[torch.isnan(r)] = 0
+        # return torch.mean(r)
+        return r
     return r
 
 

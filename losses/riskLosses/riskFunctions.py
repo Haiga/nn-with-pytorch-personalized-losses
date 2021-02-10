@@ -2,18 +2,19 @@ import torch
 
 
 def zRisk(mat, alpha, requires_grad=False, i=0):
-    alpha = torch.tensor([alpha], requires_grad=requires_grad, dtype=torch.float)
+    alpha_tensor = torch.tensor([alpha], requires_grad=requires_grad, dtype=torch.float)
     si = torch.sum(mat[:, i])
     tj = torch.sum(mat, dim=1)
     n = torch.sum(tj)
 
     xij_eij = mat[:, i] - si * (tj / n)
     den = torch.sqrt(si * (tj / n))
+    # den[torch.isnan(den)] = 0
     div = xij_eij / den
 
     less0 = (mat[:, i] - si * (tj / n)) / (torch.sqrt(si * (tj / n))) < 0
 
-    less0 = alpha * less0
+    less0 = alpha_tensor * less0
     z_risk = div * less0 + div
     # z_risk[torch.isnan(z_risk)] = 0
     z_risk = torch.sum(z_risk)

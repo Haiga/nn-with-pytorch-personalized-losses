@@ -31,8 +31,6 @@ if __name__ == '__main__':
     data_infos.baseline_test_data_path = home + "/BD/" + dataset_name + f"/Fold{fold}/baseline.Norm.test.txt"
     data_infos.baseline_vali_data_path = home + "/BD/" + dataset_name + f"/Fold{fold}/baseline.Norm.vali.txt"
 
-
-
     X_train, y_train = get_data(data_infos, "test")
     y_baseline_train = get_baseline_data(data_infos, "test")
 
@@ -55,7 +53,7 @@ if __name__ == '__main__':
     # N_queries_valid = 10
     # N_docs_per_query = 1000
     N_features = data_infos.num_features
-    epochs = 10
+    epochs = 50
     # batch_size_docs = 20
     # batch_size_queries = 10
     batch_size_queries = 200
@@ -63,12 +61,13 @@ if __name__ == '__main__':
     # net = Net(N_features)
     net = DoubleLayerNet(N_features)
     # net = TripleLayerNet(N_features)
-    config = Config.from_json("config.json")
-    # config.model.d
-    net = make_model(n_features=N_features, **asdict(config.model, recurse=False))
+    # config = Config.from_json("config.json")
+    # # config.model.d
+    # config.model.fc_model['dropout'] = 0.2
+    # net = make_model(n_features=N_features, **asdict(config.model, recurse=False))
     # opt = optim.Adam(net.parameters(), lr=0.01)
     # opt = optim.Adam(net.parameters(), lr=0.1)
-    opt = optim.Adam(net.parameters(), lr=0.0001)
+    opt = optim.Adam(net.parameters(), lr=0.001)
 
     # opt = optim.SGD(net.parameters(), lr=0.01)
     # opt = optim.SGD(net.parameters(), lr=1)###########com subtração min no geo
@@ -104,9 +103,9 @@ if __name__ == '__main__':
                 # batch_loss = ndcg_loss(batch_ys, batch_preds)
                 # batch_loss = approxNDCGLoss(batch_ys, batch_preds)
                 # batch_loss = clean_ndcg_loss(batch_ys, batch_preds)
-                # batch_loss = listnetLoss(batch_ys, batch_preds)
+
                 # batch_loss = georisk_listnet_loss(batch_ys, batch_preds, batch_ys_baseline)
-                batch_loss = losses.riskLosses.geoRiskListnetLoss(batch_ys, batch_preds, batch_ys_baseline, alpha=2)
+                # batch_loss = losses.riskLosses.geoRiskListnetLoss(batch_ys, batch_preds, batch_ys_baseline, alpha=2)
                 # b = nn.MSELoss()
                 # batch_loss = b(batch_preds, batch_ys)
                 # batch_loss = losses.riskLosses.tRiskListnetLoss(batch_ys, batch_preds,
@@ -121,20 +120,34 @@ if __name__ == '__main__':
                 # batch_loss = losses.riskLosses.tRiskLambdaLoss(batch_ys, batch_preds,
                 #                                                 torch.mean(batch_ys_baseline, dim=2), alpha=1,
                 #                                                 normalization=0)
-                # batch_loss = losses.riskLosses.geoRiskLambdaLoss(batch_ys, batch_preds,
-                #                                                batch_ys_baseline, alpha=1,
-                #                                                normalization=1)
+                # batch_loss = listnetLoss(batch_ys, batch_preds)
+                baselines_p = batch_ys_baseline
+                # baselines_p = batch_ys
+                # baselines_p = torch.mean(batch_ys_baseline, dim=2)
+                # batch_loss = losses.riskLosses.tRiskLambdaLoss(batch_ys, batch_preds,###############
+                #                                                 baselines_p,
+                #                                                 listnet_transformation=1,
+                #                                                 negative=1, alpha=2)
+                # batch_loss = losses.riskLosses.zRiskListnetLoss(batch_ys, batch_preds,
+                #                                                 y_baselines=None,
+                #                                                 listnet_transformation=2,
+                #                                                 add_ideal_ranking_to_mat=2, alpha=2, return_strategy=2,
+                #                                                 negative=1)
+                batch_loss = nn.MSELoss()(batch_preds, batch_ys)
+                # batch_loss.backward(retain_graph=True)
                 batch_loss.backward(retain_graph=True)
                 print(batch_loss)
                 opt.step()
             # print(f"ended {it}")
         with torch.no_grad():
             valid_pred = net(X_vali, None, None)
+            train_pred = net(X_train[:600], None, None)
             ndcg_score = torchNdcg(y_vali, valid_pred, k=10, return_type='tensor')
+            ndcg_score_t = torchNdcg(y_train[:600], train_pred, k=10, return_type='tensor')
             # ndcg_score_train = torchNdcg(y_train, net(X_train, None, None), k=10, return_type='tensor')
-            ndcg_score_mean = ndcg_score.numpy()[0]
+            ndcg_score_mean = np.mean(ndcg_score.numpy())
+            ndcg_score_mean_t = np.mean(ndcg_score_t.numpy())
             # ndcg_score_mean_train = ndcg_score_train.numpy()[0]
-
 
             ##############################
             # mat = [ndcg_score]
@@ -175,3 +188,5 @@ if __name__ == '__main__':
             # print(f"epoch: {epoch + 1} - ndcg: {ndcg_score_mean:.4f} - ndcgtrain: {ndcg_score_mean_test:.4f} - georisk: {georisk_score:.4f}")
             # print(f"epoch: {epoch + 1} - ndcg: {ndcg_score_mean:.4f} - georisk: {georisk_score:.4f}")
             print(f"epoch: {epoch + 1} - ndcg: {ndcg_score_mean:.4f} ")
+            print(f"epoch: {epoch + 1} - ndcg: {ndcg_score_mean_t:.4f} ")
+            print(f"---")
